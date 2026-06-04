@@ -3,6 +3,16 @@
 This changelog tracks the Createrington Skin API TypeScript SDK. A release
 publishes to npm when a version bump is merged to `main`.
 
+## v2.3.2
+
+### Changed
+
+- Relicensed under Apache-2.0 (previously unlicensed). The public API is unchanged.
+- The SDK now lives in its own open-source repository, and `src/generated/poses.ts`
+  is generated from the published OpenAPI document rather than from server-side files.
+- Version aligned with the other Createrington Skin API SDKs (.NET, Python) so all
+  clients share one version line.
+
 ## v2.3.1 (2026-06-03)
 
 ### Changed
