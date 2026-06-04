@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/matejhozlar/skin-api-ts/main/assets/og-card.png" alt="Createrington Skin API - TypeScript / JavaScript client" />
+</p>
+
 # createrington-skin-api
 
 Official TypeScript client for the Createrington Skin API. Renders Minecraft
