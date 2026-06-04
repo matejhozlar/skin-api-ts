@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest an improvement to the TypeScript client
+title: "Feature: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Heads up: the available poses come from the API, not the SDK. A new pose
+        does not need an SDK change, because `render` accepts any pose string.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What are you trying to do that the SDK makes awkward today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false

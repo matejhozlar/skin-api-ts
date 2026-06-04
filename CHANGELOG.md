@@ -1,0 +1,80 @@
+# createrington-skin-api (TypeScript)
+
+This changelog tracks the Createrington Skin API TypeScript SDK. A release
+publishes to npm when a version bump is merged to `main`.
+
+## v2.3.1 (2026-06-03)
+
+### Changed
+
+- Boolean render params now serialize as `true`/`false` on the wire instead of
+  `1`/`0` (`slim=true`, `outline=true`); `outline` is still omitted when off. The
+  public API is unchanged (still booleans) and the server accepts both forms, so
+  this is non-breaking.
+
+## v2.3.0 (2026-06-03)
+
+### Added
+
+- `RenderOptions.outline`: optional boolean that draws a contrasting outline
+  around the rendered figure. Off by default; the SDK sends `outline=1` only
+  when `true` and omits the parameter otherwise. Additive and non-breaking.
+
+## v2.2.0 (2026-06-01)
+
+### Added
+
+- `Poses`: named constants for every pose known to the SDK (e.g. `Poses.wave`),
+  for discoverability and autocompletion. This is the recommended way to
+  reference a pose by name. Additive and non-breaking.
+
+### Changed
+
+- Docs now lead with `Poses`. `KNOWN_POSES` and `KnownPose` remain exported for
+  iteration and validation.
+
+## v2.1.0 (2026-05-31)
+
+### Added
+
+- `randomPose()` returns a uniformly random pose name from `KNOWN_POSES`,
+  typed as `KnownPose`. Additive and non-breaking.
+
+## v2.0.0 (2026-05-30)
+
+### Breaking
+
+- Removed `listPoses()` along with the `PoseSummary` and
+  `ListPosesOptions` types. The method only saved one round-trip over the
+  bundled `KNOWN_POSES` list and shipped an unvalidated response cast, so
+  it was not worth carrying in the public surface. Consumers who need the
+  live catalogue (with descriptions and `hasCustomCamera`) can call
+  `GET /v1/poses` directly. `KNOWN_POSES` / `KnownPose` still cover
+  compile-time pose names, and `render` accepts any pose string so
+  server-added poses keep working without an SDK upgrade.
+
+## v1.0.0 (2026-05-27)
+
+Initial public release on npm.
+
+### Surface
+
+- `SkinApi` class with `render({ pose, source, options? })` returning
+  `Promise<Uint8Array>` and `listPoses()` returning the live pose
+  catalogue from the server.
+- `baseUrl` defaults to `https://api.createrington.com`; consumers
+  only need to supply `apiKey`.
+- `KNOWN_POSES` const array + `KnownPose` type generated from the
+  server's pose data at SDK build time.
+- Single `SkinApiError` class carrying `code`, `status`, and
+  `retryAfterMs`.
+- Browser-safe: uses `globalThis.fetch`, `FormData`, and
+  `Uint8Array`. No Node-only imports.
+
+### Behaviour
+
+- Retries `429`, `502`, `503`, `504`, and network errors up to
+  `retries` times (default 2) with exponential backoff + jitter.
+- `429` responses honour `retryAfterMs` from the server body when
+  present.
+- Per-request timeout (`timeoutMs`, default 30s) via `AbortController`.
