@@ -1,6 +1,6 @@
 {
   "name": "createrington-skin-api",
-  "version": "2.3.2",
+  "version": "2.3.3",
   "license": "Apache-2.0",
   "description": "Official TypeScript client for the Createrington Skin API.",
   "type": "module",
@@ -22,7 +22,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://gitea.matejhoz.com/matejhozlar/skin-api-ts"
+    "url": "https://github.com/matejhozlar/skin-api-ts"
   },
   "homepage": "https://api.createrington.com",
   "scripts": {
