@@ -137,15 +137,25 @@ export class SkinApi {
    * ```
    */
   async render(params: RenderParams): Promise<Uint8Array> {
-    const query = buildQuery(params.pose, params.options);
-    const url = `${this.baseUrl}/v1/render${query}`;
-    const { body, contentType } = buildRenderBody(params.source);
-
     const headers: Record<string, string> = this.authHeaders();
-    if (contentType) headers["content-type"] = contentType;
+
+    const getSource = querySource(params.source);
+    let method: "GET" | "POST";
+    let body: BodyInit | undefined;
+    if (getSource) {
+      method = "GET";
+    } else {
+      method = "POST";
+      const built = buildRenderBody(params.source);
+      body = built.body;
+      if (built.contentType) headers["content-type"] = built.contentType;
+    }
+
+    const query = buildQuery(params.pose, params.options, getSource);
+    const url = `${this.baseUrl}/v1/render${query}`;
 
     const res = await this.request(url, {
-      method: "POST",
+      method,
       headers,
       body,
       signal: params.signal,
@@ -250,7 +260,11 @@ function abortedFromSignal(signal: AbortSignal): SkinApiError {
   return new SkinApiError(message, { code: "aborted", status: 0 });
 }
 
-function buildQuery(pose: string, options: RenderOptions | undefined): string {
+function buildQuery(
+  pose: string,
+  options: RenderOptions | undefined,
+  source?: QuerySource,
+): string {
   const params = new URLSearchParams();
   params.set("pose", pose);
   if (options?.slim !== undefined)
@@ -259,7 +273,20 @@ function buildQuery(pose: string, options: RenderOptions | undefined): string {
   if (options?.width !== undefined) params.set("width", String(options.width));
   if (options?.height !== undefined)
     params.set("height", String(options.height));
+  if (source) params.set(source.key, source.value);
   return `?${params.toString()}`;
+}
+
+interface QuerySource {
+  key: "uuid" | "username";
+  value: string;
+}
+
+// uuid/username carry no payload, so they ride in the query (GET); others POST a body.
+function querySource(source: SkinSource): QuerySource | undefined {
+  if ("uuid" in source) return { key: "uuid", value: source.uuid };
+  if ("username" in source) return { key: "username", value: source.username };
+  return undefined;
 }
 
 interface BuiltBody {

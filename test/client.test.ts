@@ -74,7 +74,7 @@ describe("SkinApi", () => {
     expect(DEFAULT_BASE_URL).toBe("https://api.createrington.com");
   });
 
-  it("sends bearer auth and json body for uuid source", async () => {
+  it("uses GET with uuid in the query and no body for uuid source", async () => {
     const { fetch, captured } = makeFetchMock([pngResponse()]);
     const client = new SkinApi({
       apiKey: API_KEY,
@@ -87,13 +87,33 @@ describe("SkinApi", () => {
       options: { slim: true, width: 200, height: 300 },
     });
     expect(out).toBeInstanceOf(Uint8Array);
-    expect(captured[0].method).toBe("POST");
+    expect(captured[0].method).toBe("GET");
     expect(captured[0].url).toBe(
-      "http://skin.test/v1/render?pose=wave&slim=true&width=200&height=300",
+      "http://skin.test/v1/render?pose=wave&slim=true&width=200&height=300&uuid=uuid-1",
     );
     expect(captured[0].headers["authorization"]).toBe(`Bearer ${API_KEY}`);
-    expect(captured[0].headers["content-type"]).toBe("application/json");
-    expect(captured[0].body).toBe(JSON.stringify({ uuid: "uuid-1" }));
+    expect(captured[0].headers["content-type"]).toBeUndefined();
+    expect(captured[0].body).toBeUndefined();
+  });
+
+  it("uses GET with username in the query and no body for username source", async () => {
+    const { fetch, captured } = makeFetchMock([pngResponse()]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+    });
+    const out = await client.render({
+      pose: "wave",
+      source: { username: "Notch" },
+    });
+    expect(out).toBeInstanceOf(Uint8Array);
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe(
+      "http://skin.test/v1/render?pose=wave&username=Notch",
+    );
+    expect(captured[0].headers["content-type"]).toBeUndefined();
+    expect(captured[0].body).toBeUndefined();
   });
 
   it("sends outline=true when outline is true", async () => {
@@ -109,7 +129,7 @@ describe("SkinApi", () => {
       options: { outline: true },
     });
     expect(captured[0].url).toBe(
-      "http://skin.test/v1/render?pose=wave&outline=true",
+      "http://skin.test/v1/render?pose=wave&outline=true&uuid=uuid-1",
     );
   });
 
@@ -126,8 +146,12 @@ describe("SkinApi", () => {
       options: { outline: false },
     });
     await client.render({ pose: "wave", source: { uuid: "uuid-1" } });
-    expect(captured[0].url).toBe("http://skin.test/v1/render?pose=wave");
-    expect(captured[1].url).toBe("http://skin.test/v1/render?pose=wave");
+    expect(captured[0].url).toBe(
+      "http://skin.test/v1/render?pose=wave&uuid=uuid-1",
+    );
+    expect(captured[1].url).toBe(
+      "http://skin.test/v1/render?pose=wave&uuid=uuid-1",
+    );
   });
 
   it("sets user-agent in node-like environments", async () => {
@@ -174,6 +198,41 @@ describe("SkinApi", () => {
     }
   });
 
+  it("uses POST with json body for skinUrl source", async () => {
+    const { fetch, captured } = makeFetchMock([pngResponse()]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+    });
+    await client.render({
+      pose: "wave",
+      source: { skinUrl: "https://example.test/skin.png" },
+    });
+    expect(captured[0].method).toBe("POST");
+    expect(captured[0].url).toBe("http://skin.test/v1/render?pose=wave");
+    expect(captured[0].headers["content-type"]).toBe("application/json");
+    expect(captured[0].body).toBe(
+      JSON.stringify({ skinUrl: "https://example.test/skin.png" }),
+    );
+  });
+
+  it("uses POST with json body for skinBase64 source", async () => {
+    const { fetch, captured } = makeFetchMock([pngResponse()]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+    });
+    await client.render({
+      pose: "wave",
+      source: { skinBase64: "aGVsbG8=" },
+    });
+    expect(captured[0].method).toBe("POST");
+    expect(captured[0].headers["content-type"]).toBe("application/json");
+    expect(captured[0].body).toBe(JSON.stringify({ skinBase64: "aGVsbG8=" }));
+  });
+
   it("uses multipart for png source", async () => {
     const { fetch, captured } = makeFetchMock([pngResponse()]);
     const client = new SkinApi({
@@ -182,6 +241,7 @@ describe("SkinApi", () => {
       fetch,
     });
     await client.render({ pose: "wave", source: { png: PNG_BYTES } });
+    expect(captured[0].method).toBe("POST");
     expect(captured[0].body).toBeInstanceOf(FormData);
     expect(captured[0].headers["content-type"]).toBeUndefined();
   });

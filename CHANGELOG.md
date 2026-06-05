@@ -3,6 +3,15 @@
 This changelog tracks the Createrington Skin API TypeScript SDK. A release
 publishes to npm when a version bump is merged to `main`.
 
+## v2.4.0
+
+### Changed
+
+- `render()` now calls the API over HTTP `GET` for `uuid` and `username` sources
+  (the identifier rides in the query string), so these renders are plain
+  cacheable URLs. `skinUrl`, `skinBase64`, and PNG uploads still use `POST`. The
+  public API is unchanged and the server supports both, so this is non-breaking.
+
 ## v2.3.3
 
 ### Fixed
