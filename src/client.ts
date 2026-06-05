@@ -140,7 +140,7 @@ export class SkinApi {
     const headers: Record<string, string> = this.authHeaders();
 
     const getSource = querySource(params.source);
-    let method: string;
+    let method: "GET" | "POST";
     let body: BodyInit | undefined;
     if (getSource) {
       method = "GET";
@@ -282,11 +282,7 @@ interface QuerySource {
   value: string;
 }
 
-/**
- * The `uuid` and `username` sources are server-resolved and carry no payload,
- * so they ride in the query string and the request uses GET (no body). The
- * skinUrl/skinBase64/png sources stay POST with a body.
- */
+// uuid/username carry no payload, so they ride in the query (GET); others POST a body.
 function querySource(source: SkinSource): QuerySource | undefined {
   if ("uuid" in source) return { key: "uuid", value: source.uuid };
   if ("username" in source) return { key: "username", value: source.username };
