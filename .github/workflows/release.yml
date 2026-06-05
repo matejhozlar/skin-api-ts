@@ -1,0 +1,37 @@
+name: Release
+
+# Publish a GitHub Release when a version bump lands on main. This runs ONLY on
+# GitHub Actions; on the Gitea mirror the job is skipped by the server_url guard.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  github-release:
+    if: ${{ github.server_url == 'https://github.com' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: ver
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Create release if new
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          tag="v$VERSION"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; nothing to do."
+            exit 0
+          fi
+          awk -v ver="## $tag" 'index($0, ver)==1 { cap=1; next } cap && /^## / { exit } cap { print }' CHANGELOG.md > RELEASE_NOTES.md
+          if [ ! -s RELEASE_NOTES.md ]; then echo "Release $tag" > RELEASE_NOTES.md; fi
+          gh release create "$tag" --title "$tag" --notes-file RELEASE_NOTES.md --latest
