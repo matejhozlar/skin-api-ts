@@ -3,6 +3,19 @@
 This changelog tracks the Createrington Skin API TypeScript SDK. A release
 publishes to npm when a version bump is merged to `main`.
 
+## v2.5.0
+
+### Added
+
+- `avatar({ source, options? })`: renders the flat 2D front-view avatar (the
+  head's face with the hat layer composited on top) and returns the square PNG
+  bytes. It takes the same `SkinSource` as `render` over the same GET/POST
+  transport, with avatar-only `AvatarOptions` (`size`, default 64, clamped to
+  8..512; `overlay`, default true, sent only when set to `false`). Adds the
+  `AvatarOptions` and `AvatarParams` exported types. Additive and non-breaking.
+- `idle` pose: regenerated `Poses`/`KNOWN_POSES` from the published OpenAPI
+  document now include the new server-side `idle` pose.
+
 ## v2.4.0
 
 ### Changed
