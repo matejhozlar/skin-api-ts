@@ -3,6 +3,8 @@ export {
   DEFAULT_BASE_URL,
   KNOWN_POSES,
   Poses,
+  type AvatarOptions,
+  type AvatarParams,
   type KnownPose,
   type PoseName,
   type RenderOptions,

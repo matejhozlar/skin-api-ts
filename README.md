@@ -86,6 +86,36 @@ const png = await api.render({
 `pose` is autocompleted to a `KnownPose` (e.g. `"wave"`, `"cheer"`), but any
 string is accepted so newly added server poses work without an SDK upgrade.
 
+### `avatar({ source, options? }): Promise<Uint8Array>`
+
+Renders the flat 2D front-view avatar (the head's face with the hat layer
+composited on top) and returns the square PNG bytes. It takes the same
+`SkinSource` as `render`, with avatar-only options:
+
+```ts
+interface AvatarOptions {
+  size?: number; // square edge length in pixels; default 64 (8..512)
+  overlay?: boolean; // composite the hat layer over the face; default true
+}
+```
+
+```ts
+// 128x128 face avatar for a Minecraft account by username.
+const png = await api.avatar({
+  source: { username: "Notch" },
+  options: { size: 128 },
+});
+
+// Face only, no hat layer.
+const bare = await api.avatar({
+  source: { uuid: "069a79f444e94726a5befca90e38aaf5" },
+  options: { overlay: false },
+});
+```
+
+`overlay` is on by default, so the SDK sends `overlay=false` only when you
+explicitly disable it and omits the parameter otherwise.
+
 ### `Poses`
 
 Named constants for every pose known to the SDK at publish time, so you can
