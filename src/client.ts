@@ -68,6 +68,27 @@ export interface RenderParams {
   signal?: AbortSignal;
 }
 
+/** Optional avatar tuning. Unset values fall back to server defaults. */
+export interface AvatarOptions {
+  /** Output edge length in pixels; the image is square. Default `64`; clamped to 8..512. */
+  size?: number;
+  /**
+   * Composite the hat layer over the face. On by default; omitted from the
+   * request unless `false`.
+   */
+  overlay?: boolean;
+}
+
+/** Arguments to {@link SkinApi.avatar}. */
+export interface AvatarParams {
+  /** The skin to render; exactly one source. */
+  source: SkinSource;
+  /** Optional avatar tuning (size, overlay). */
+  options?: AvatarOptions;
+  /** An `AbortSignal` to cancel the request. */
+  signal?: AbortSignal;
+}
+
 /** Options for the {@link SkinApi} constructor. */
 export interface SkinApiOptions {
   /** Your API key. Required. Sent as `Authorization: Bearer <apiKey>`. */
@@ -153,6 +174,52 @@ export class SkinApi {
 
     const query = buildQuery(params.pose, params.options, getSource);
     const url = `${this.baseUrl}/v1/render${query}`;
+
+    const res = await this.request(url, {
+      method,
+      headers,
+      body,
+      signal: params.signal,
+    });
+    const ab = await res.arrayBuffer();
+    return new Uint8Array(ab);
+  }
+
+  /**
+   * Render the flat 2D front-view avatar (the head's face plus hat overlay) for
+   * the given skin source and return the square PNG bytes.
+   *
+   * Retries `429`/`502`/`503`/`504` and network errors per the `retries`
+   * option, honouring a `429` `retryAfterMs` when present.
+   *
+   * @param params - Skin source and optional tuning. See {@link AvatarParams}.
+   * @returns The avatar PNG image as a `Uint8Array`.
+   * @throws {SkinApiError} On any non-2xx response, network error, timeout, or abort.
+   * @example
+   * ```ts
+   * const png = await api.avatar({
+   *   source: { username: "Notch" },
+   *   options: { size: 128 },
+   * });
+   * ```
+   */
+  async avatar(params: AvatarParams): Promise<Uint8Array> {
+    const headers: Record<string, string> = this.authHeaders();
+
+    const getSource = querySource(params.source);
+    let method: "GET" | "POST";
+    let body: BodyInit | undefined;
+    if (getSource) {
+      method = "GET";
+    } else {
+      method = "POST";
+      const built = buildRenderBody(params.source);
+      body = built.body;
+      if (built.contentType) headers["content-type"] = built.contentType;
+    }
+
+    const query = buildAvatarQuery(params.options, getSource);
+    const url = `${this.baseUrl}/v1/avatar${query}`;
 
     const res = await this.request(url, {
       method,
@@ -275,6 +342,18 @@ function buildQuery(
     params.set("height", String(options.height));
   if (source) params.set(source.key, source.value);
   return `?${params.toString()}`;
+}
+
+function buildAvatarQuery(
+  options: AvatarOptions | undefined,
+  source?: QuerySource,
+): string {
+  const params = new URLSearchParams();
+  if (options?.size !== undefined) params.set("size", String(options.size));
+  if (options?.overlay === false) params.set("overlay", "false");
+  if (source) params.set(source.key, source.value);
+  const query = params.toString();
+  return query ? `?${query}` : "";
 }
 
 interface QuerySource {

@@ -426,6 +426,193 @@ describe("SkinApi", () => {
   });
 });
 
+describe("SkinApi.avatar", () => {
+  it("uses GET with uuid in the query and no body for uuid source", async () => {
+    const { fetch, captured } = makeFetchMock([pngResponse()]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+    });
+    const out = await client.avatar({
+      source: { uuid: "uuid-1" },
+      options: { size: 128 },
+    });
+    expect(out).toBeInstanceOf(Uint8Array);
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe(
+      "http://skin.test/v1/avatar?size=128&uuid=uuid-1",
+    );
+    expect(captured[0].headers["authorization"]).toBe(`Bearer ${API_KEY}`);
+    expect(captured[0].headers["content-type"]).toBeUndefined();
+    expect(captured[0].body).toBeUndefined();
+  });
+
+  it("uses GET with username and no options", async () => {
+    const { fetch, captured } = makeFetchMock([pngResponse()]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+    });
+    await client.avatar({ source: { username: "Notch" } });
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe("http://skin.test/v1/avatar?username=Notch");
+    expect(captured[0].body).toBeUndefined();
+  });
+
+  it("sends overlay=false only when overlay is false", async () => {
+    const { fetch, captured } = makeFetchMock([
+      pngResponse(),
+      pngResponse(),
+      pngResponse(),
+    ]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+    });
+    await client.avatar({
+      source: { uuid: "uuid-1" },
+      options: { overlay: false },
+    });
+    await client.avatar({
+      source: { uuid: "uuid-1" },
+      options: { overlay: true },
+    });
+    await client.avatar({ source: { uuid: "uuid-1" } });
+    expect(captured[0].url).toBe(
+      "http://skin.test/v1/avatar?overlay=false&uuid=uuid-1",
+    );
+    expect(captured[1].url).toBe("http://skin.test/v1/avatar?uuid=uuid-1");
+    expect(captured[2].url).toBe("http://skin.test/v1/avatar?uuid=uuid-1");
+  });
+
+  it("uses POST with json body for skinUrl source", async () => {
+    const { fetch, captured } = makeFetchMock([pngResponse()]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+    });
+    await client.avatar({
+      source: { skinUrl: "https://example.test/skin.png" },
+      options: { size: 256 },
+    });
+    expect(captured[0].method).toBe("POST");
+    expect(captured[0].url).toBe("http://skin.test/v1/avatar?size=256");
+    expect(captured[0].headers["content-type"]).toBe("application/json");
+    expect(captured[0].body).toBe(
+      JSON.stringify({ skinUrl: "https://example.test/skin.png" }),
+    );
+  });
+
+  it("uses POST with json body for skinBase64 source", async () => {
+    const { fetch, captured } = makeFetchMock([pngResponse()]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+    });
+    await client.avatar({ source: { skinBase64: "aGVsbG8=" } });
+    expect(captured[0].method).toBe("POST");
+    expect(captured[0].url).toBe("http://skin.test/v1/avatar");
+    expect(captured[0].headers["content-type"]).toBe("application/json");
+    expect(captured[0].body).toBe(JSON.stringify({ skinBase64: "aGVsbG8=" }));
+  });
+
+  it("uses multipart for png source", async () => {
+    const { fetch, captured } = makeFetchMock([pngResponse()]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+    });
+    await client.avatar({ source: { png: PNG_BYTES }, options: { size: 32 } });
+    expect(captured[0].method).toBe("POST");
+    expect(captured[0].url).toBe("http://skin.test/v1/avatar?size=32");
+    expect(captured[0].body).toBeInstanceOf(FormData);
+    expect(captured[0].headers["content-type"]).toBeUndefined();
+  });
+
+  it("retries 429 then succeeds", async () => {
+    const retryBody = {
+      error: { code: "RATE_LIMITED", message: "slow down", retryAfterMs: 5 },
+    };
+    const { fetch, captured } = makeFetchMock([
+      new Response(JSON.stringify(retryBody), {
+        status: 429,
+        headers: { "content-type": "application/json" },
+      }),
+      pngResponse(),
+    ]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+      retries: 1,
+    });
+    const out = await client.avatar({ source: { uuid: "x" } });
+    expect(out).toBeInstanceOf(Uint8Array);
+    expect(captured.length).toBe(2);
+  });
+
+  it("propagates a user-supplied AbortSignal as SkinApiError(aborted)", async () => {
+    const ac = new AbortController();
+    const mockFetch = vi.fn(
+      (_url: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((_, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            const err = new Error("aborted");
+            err.name = "AbortError";
+            reject(err);
+          });
+        }),
+    ) as unknown as typeof fetch;
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch: mockFetch,
+      retries: 3,
+    });
+    const inflight = client.avatar({
+      source: { uuid: "x" },
+      signal: ac.signal,
+    });
+    ac.abort();
+    await expect(inflight).rejects.toMatchObject({
+      name: "SkinApiError",
+      code: "aborted",
+      status: 0,
+    });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("normalizes UPPER_SNAKE server error codes", async () => {
+    const body = { error: { code: "NOT_FOUND", message: "Unknown player" } };
+    const { fetch } = makeFetchMock([
+      new Response(JSON.stringify(body), {
+        status: 404,
+        headers: { "content-type": "application/json" },
+      }),
+    ]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+      retries: 0,
+    });
+    await expect(
+      client.avatar({ source: { uuid: "x" } }),
+    ).rejects.toMatchObject({
+      name: "SkinApiError",
+      code: "not_found",
+      status: 404,
+      message: "Unknown player",
+    });
+  });
+});
+
 describe("KNOWN_POSES", () => {
   it("is populated by generate-poses at build time and includes a representative pose", () => {
     expect(Array.isArray(KNOWN_POSES)).toBe(true);
