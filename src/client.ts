@@ -89,6 +89,32 @@ export interface AvatarParams {
   signal?: AbortSignal;
 }
 
+/** Arguments to {@link SkinApi.resolve}. Provide exactly one identifier. */
+export type ResolveParams =
+  | {
+      /** Mojang UUID, dashed or compact; resolves to the current username. */
+      uuid: string;
+      /** An `AbortSignal` to cancel the request. */
+      signal?: AbortSignal;
+    }
+  | {
+      /** Minecraft username (case-insensitive); resolves to the UUID. */
+      username: string;
+      /** An `AbortSignal` to cancel the request. */
+      signal?: AbortSignal;
+    };
+
+/** A resolved player identity, as returned by {@link SkinApi.resolve}. */
+export interface ResolvedPlayer {
+  /** Canonical dashed lowercase UUID. */
+  uuid: string;
+  /**
+   * Current username in canonical casing, or `null` when a degraded fallback
+   * provider could not supply the name.
+   */
+  username: string | null;
+}
+
 /** Options for the {@link SkinApi} constructor. */
 export interface SkinApiOptions {
   /** Your API key. Required. Sent as `Authorization: Bearer <apiKey>`. */
@@ -231,6 +257,41 @@ export class SkinApi {
     return new Uint8Array(ab);
   }
 
+  /**
+   * Resolve a player identity in either direction: pass `uuid` to get the
+   * current username, or `username` to get the canonical UUID. The returned
+   * `uuid` is always the dashed lowercase form and `username` carries the
+   * canonical casing (`null` in the rare case a degraded fallback provider
+   * could not supply the name).
+   *
+   * Retries `429`/`502`/`503`/`504` and network errors per the `retries`
+   * option, honouring a `429` `retryAfterMs` when present. Resolutions do not
+   * count toward the volume quota. Lookups are served from the server's
+   * resolution cache, so a recent name change can take up to a day to appear.
+   *
+   * @param params - Exactly one of `uuid` or `username`. See {@link ResolveParams}.
+   * @returns The resolved player identity.
+   * @throws {SkinApiError} On any non-2xx response, network error, timeout, or abort.
+   * @example
+   * ```ts
+   * const profile = await api.resolve({ username: "notch" });
+   * // { uuid: "069a79f4-44e9-4726-a5be-fca90e38aaf5", username: "Notch" }
+   * ```
+   */
+  async resolve(params: ResolveParams): Promise<ResolvedPlayer> {
+    const identifier = resolveIdentifier(params);
+    const query = new URLSearchParams();
+    query.set(identifier.key, identifier.value);
+    const url = `${this.baseUrl}/v1/resolve?${query.toString()}`;
+
+    const res = await this.request(url, {
+      method: "GET",
+      headers: this.authHeaders(),
+      signal: params.signal,
+    });
+    return (await res.json()) as ResolvedPlayer;
+  }
+
   private authHeaders(): Record<string, string> {
     const headers: Record<string, string> = {
       authorization: `Bearer ${this.apiKey}`,
@@ -359,6 +420,23 @@ function buildAvatarQuery(
 interface QuerySource {
   key: "uuid" | "username";
   value: string;
+}
+
+// The union type admits a literal with both identifiers, and JS callers have
+// no types at all, so exactly-one is also enforced at runtime.
+function resolveIdentifier(params: ResolveParams): QuerySource {
+  const uuid = "uuid" in params ? params.uuid : undefined;
+  const username = "username" in params ? params.username : undefined;
+  if (uuid !== undefined && username === undefined) {
+    return { key: "uuid", value: uuid };
+  }
+  if (username !== undefined && uuid === undefined) {
+    return { key: "username", value: username };
+  }
+  throw new SkinApiError("resolve requires exactly one of uuid or username", {
+    code: "bad_request",
+    status: 0,
+  });
 }
 
 // uuid/username carry no payload, so they ride in the query (GET); others POST a body.

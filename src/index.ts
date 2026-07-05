@@ -9,6 +9,8 @@ export {
   type PoseName,
   type RenderOptions,
   type RenderParams,
+  type ResolveParams,
+  type ResolvedPlayer,
   type SkinApiOptions,
   type SkinSource,
 } from "@/client.js";

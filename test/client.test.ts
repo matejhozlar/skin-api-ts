@@ -6,6 +6,7 @@ import {
   randomPose,
   SkinApi,
   SkinApiError,
+  type ResolveParams,
 } from "../src/index.js";
 
 const API_KEY = "test-key";
@@ -610,6 +611,172 @@ describe("SkinApi.avatar", () => {
       status: 404,
       message: "Unknown player",
     });
+  });
+});
+
+describe("SkinApi.resolve", () => {
+  const PROFILE = {
+    uuid: "069a79f4-44e9-4726-a5be-fca90e38aaf5",
+    username: "Notch",
+  };
+
+  function profileResponse(profile: unknown = PROFILE): Response {
+    return new Response(JSON.stringify(profile), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  it("uses GET with uuid in the query and no body", async () => {
+    const { fetch, captured } = makeFetchMock([profileResponse()]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+    });
+    const out = await client.resolve({
+      uuid: "069a79f444e94726a5befca90e38aaf5",
+    });
+    expect(out).toEqual(PROFILE);
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe(
+      "http://skin.test/v1/resolve?uuid=069a79f444e94726a5befca90e38aaf5",
+    );
+    expect(captured[0].headers["authorization"]).toBe(`Bearer ${API_KEY}`);
+    expect(captured[0].headers["content-type"]).toBeUndefined();
+    expect(captured[0].body).toBeUndefined();
+  });
+
+  it("uses GET with username and parses the canonical profile", async () => {
+    const { fetch, captured } = makeFetchMock([profileResponse()]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+    });
+    const out = await client.resolve({ username: "notch" });
+    expect(out).toEqual(PROFILE);
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe("http://skin.test/v1/resolve?username=notch");
+    expect(captured[0].body).toBeUndefined();
+  });
+
+  it("passes through a null username from a degraded profile", async () => {
+    const { fetch } = makeFetchMock([
+      profileResponse({ uuid: PROFILE.uuid, username: null }),
+    ]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+    });
+    const out = await client.resolve({ uuid: PROFILE.uuid });
+    expect(out.uuid).toBe(PROFILE.uuid);
+    expect(out.username).toBeNull();
+  });
+
+  it("rejects with bad_request when both identifiers are provided, without calling fetch", async () => {
+    const mockFetch = vi.fn() as unknown as typeof fetch;
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch: mockFetch,
+    });
+    await expect(
+      client.resolve({ uuid: "x", username: "y" }),
+    ).rejects.toMatchObject({
+      name: "SkinApiError",
+      code: "bad_request",
+      status: 0,
+    });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects with bad_request when no identifier is provided, without calling fetch", async () => {
+    const mockFetch = vi.fn() as unknown as typeof fetch;
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch: mockFetch,
+    });
+    await expect(client.resolve({} as ResolveParams)).rejects.toMatchObject({
+      name: "SkinApiError",
+      code: "bad_request",
+      status: 0,
+    });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("maps 404 to not_found for an unknown player", async () => {
+    const body = { error: { code: "NOT_FOUND", message: "Unknown player" } };
+    const { fetch } = makeFetchMock([
+      new Response(JSON.stringify(body), {
+        status: 404,
+        headers: { "content-type": "application/json" },
+      }),
+    ]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+      retries: 0,
+    });
+    await expect(client.resolve({ username: "ghost" })).rejects.toMatchObject({
+      name: "SkinApiError",
+      code: "not_found",
+      status: 404,
+      message: "Unknown player",
+    });
+  });
+
+  it("retries 429 then succeeds", async () => {
+    const retryBody = {
+      error: { code: "RATE_LIMITED", message: "slow down", retryAfterMs: 5 },
+    };
+    const { fetch, captured } = makeFetchMock([
+      new Response(JSON.stringify(retryBody), {
+        status: 429,
+        headers: { "content-type": "application/json" },
+      }),
+      profileResponse(),
+    ]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+      retries: 1,
+    });
+    const out = await client.resolve({ uuid: "x" });
+    expect(out).toEqual(PROFILE);
+    expect(captured.length).toBe(2);
+  });
+
+  it("propagates a user-supplied AbortSignal as SkinApiError(aborted)", async () => {
+    const ac = new AbortController();
+    const mockFetch = vi.fn(
+      (_url: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((_, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            const err = new Error("aborted");
+            err.name = "AbortError";
+            reject(err);
+          });
+        }),
+    ) as unknown as typeof fetch;
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch: mockFetch,
+      retries: 3,
+    });
+    const inflight = client.resolve({ uuid: "x", signal: ac.signal });
+    ac.abort();
+    await expect(inflight).rejects.toMatchObject({
+      name: "SkinApiError",
+      code: "aborted",
+      status: 0,
+    });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });
 
