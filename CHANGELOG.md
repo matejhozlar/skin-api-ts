@@ -3,6 +3,21 @@
 This changelog tracks the Createrington Skin API TypeScript SDK. A release
 publishes to npm when a version bump is merged to `main`.
 
+## v2.6.0
+
+### Added
+
+- `resolve({ uuid } | { username })`: resolves a player identity in either
+  direction over `GET /v1/resolve` and returns the canonical profile, where
+  `uuid` is always the dashed lowercase form and `username` carries the
+  canonical casing (`null` only when a degraded fallback provider could not
+  supply the name). Exactly one identifier is required; passing both or
+  neither throws a plain `Error` before any request is made.
+  Resolutions do not count toward the volume quota, and lookups follow the
+  server's resolution cache, so a recent name change can take up to a day to
+  appear. Adds the `ResolveParams` and `ResolvedPlayer` exported types.
+  Additive and non-breaking.
+
 ## v2.5.0
 
 ### Added
