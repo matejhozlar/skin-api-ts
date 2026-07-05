@@ -116,6 +116,34 @@ const bare = await api.avatar({
 `overlay` is on by default, so the SDK sends `overlay=false` only when you
 explicitly disable it and omits the parameter otherwise.
 
+### `resolve({ uuid } | { username }): Promise<ResolvedPlayer>`
+
+Resolves a player identity in either direction: pass `uuid` to get the current
+username, or `username` to get the UUID. Exactly one identifier is required;
+passing both or neither throws a plain `Error` before any request is made.
+
+```ts
+interface ResolvedPlayer {
+  uuid: string; // canonical dashed lowercase UUID
+  username: string | null; // canonical casing; null only in a degraded fallback case
+}
+```
+
+```ts
+// Username -> UUID (lookup is case-insensitive; the response has canonical casing).
+const fromName = await api.resolve({ username: "notch" });
+// { uuid: "069a79f4-44e9-4726-a5be-fca90e38aaf5", username: "Notch" }
+
+// UUID -> current username (dashed or compact input both work).
+const fromUuid = await api.resolve({
+  uuid: "069a79f444e94726a5befca90e38aaf5",
+});
+```
+
+Resolutions do not count toward the volume quota. Lookups are served from the
+server's resolution cache, so a recent name change can take up to a day to
+appear.
+
 ### `Poses`
 
 Named constants for every pose known to the SDK at publish time, so you can
