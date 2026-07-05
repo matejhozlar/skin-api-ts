@@ -1,6 +1,5 @@
 /** Categorises a {@link SkinApiError}. `"timeout"`, `"aborted"`, and
- * `"network_error"` are client-side (`"bad_request"` can be too, for invalid
- * arguments); the rest map from HTTP responses. */
+ * `"network_error"` are client-side; the rest map from HTTP responses. */
 export type SkinApiErrorCode =
   | "bad_request"
   | "unauthorized"
@@ -21,7 +20,7 @@ export type SkinApiErrorCode =
 export class SkinApiError extends Error {
   /** Categorised error code. */
   readonly code: SkinApiErrorCode;
-  /** HTTP status code, or `0` for client-side failures. */
+  /** HTTP status code, or `0` for network/timeout/abort failures. */
   readonly status: number;
   /** Server-suggested retry delay in milliseconds, when a `429` provides one. */
   readonly retryAfterMs: number | undefined;

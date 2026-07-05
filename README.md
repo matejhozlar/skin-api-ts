@@ -120,8 +120,7 @@ explicitly disable it and omits the parameter otherwise.
 
 Resolves a player identity in either direction: pass `uuid` to get the current
 username, or `username` to get the UUID. Exactly one identifier is required;
-passing both or neither throws a client-side `SkinApiError` with
-`code: "bad_request"`.
+passing both or neither throws a plain `Error` before any request is made.
 
 ```ts
 interface ResolvedPlayer {
@@ -199,8 +198,7 @@ try {
 "not_found" | "conflict" | "unsupported_media_type" | "rate_limited" |
 "internal" | "render_failed" | "upstream_unavailable" | "timeout" |
 "aborted" | "network_error" | "unknown"`. `err.status` is the HTTP
-status (or `0` for client-side failures: network, timeout, abort, or
-invalid arguments).
+status (or `0` for network/timeout/abort failures).
 
 The SDK retries `429`, `502`, `503`, `504`, and network errors up to
 `retries` times with exponential backoff. `429` responses honour

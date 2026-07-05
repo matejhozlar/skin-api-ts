@@ -433,10 +433,7 @@ function resolveIdentifier(params: ResolveParams): QuerySource {
   if (username !== undefined && uuid === undefined) {
     return { key: "username", value: username };
   }
-  throw new SkinApiError("resolve requires exactly one of uuid or username", {
-    code: "bad_request",
-    status: 0,
-  });
+  throw new Error("resolve requires exactly one of uuid or username");
 }
 
 // uuid/username carry no payload, so they ride in the query (GET); others POST a body.

@@ -675,35 +675,32 @@ describe("SkinApi.resolve", () => {
     expect(out.username).toBeNull();
   });
 
-  it("rejects with bad_request when both identifiers are provided, without calling fetch", async () => {
+  it("throws a plain Error when both identifiers are provided, without calling fetch", async () => {
     const mockFetch = vi.fn() as unknown as typeof fetch;
     const client = new SkinApi({
       apiKey: API_KEY,
       baseUrl: "http://skin.test",
       fetch: mockFetch,
     });
+    await expect(client.resolve({ uuid: "x", username: "y" })).rejects.toThrow(
+      "resolve requires exactly one of uuid or username",
+    );
     await expect(
       client.resolve({ uuid: "x", username: "y" }),
-    ).rejects.toMatchObject({
-      name: "SkinApiError",
-      code: "bad_request",
-      status: 0,
-    });
+    ).rejects.not.toBeInstanceOf(SkinApiError);
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it("rejects with bad_request when no identifier is provided, without calling fetch", async () => {
+  it("throws a plain Error when no identifier is provided, without calling fetch", async () => {
     const mockFetch = vi.fn() as unknown as typeof fetch;
     const client = new SkinApi({
       apiKey: API_KEY,
       baseUrl: "http://skin.test",
       fetch: mockFetch,
     });
-    await expect(client.resolve({} as ResolveParams)).rejects.toMatchObject({
-      name: "SkinApiError",
-      code: "bad_request",
-      status: 0,
-    });
+    await expect(client.resolve({} as ResolveParams)).rejects.toThrow(
+      "resolve requires exactly one of uuid or username",
+    );
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
