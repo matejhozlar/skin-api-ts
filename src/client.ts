@@ -271,7 +271,9 @@ export class SkinApi {
    *
    * @param params - Exactly one of `uuid` or `username`. See {@link ResolveParams}.
    * @returns The resolved player identity.
-   * @throws {SkinApiError} On any non-2xx response, network error, timeout, or abort.
+   * @throws {SkinApiError} On any non-2xx response, network error, timeout, or
+   * abort, or on a 2xx response whose body is not a valid profile
+   * (`code: "unknown"` with the 2xx status).
    * @example
    * ```ts
    * const profile = await api.resolve({ username: "notch" });
@@ -289,7 +291,7 @@ export class SkinApi {
       headers: this.authHeaders(),
       signal: params.signal,
     });
-    return (await res.json()) as ResolvedPlayer;
+    return toResolvedPlayer(await readJsonSafely(res), res.status);
   }
 
   private authHeaders(): Record<string, string> {
@@ -434,6 +436,24 @@ function resolveIdentifier(params: ResolveParams): QuerySource {
     return { key: "username", value: username };
   }
   throw new Error("resolve requires exactly one of uuid or username");
+}
+
+function toResolvedPlayer(body: unknown, status: number): ResolvedPlayer {
+  if (typeof body === "object" && body !== null) {
+    const { uuid, username } = body as { uuid?: unknown; username?: unknown };
+    if (
+      typeof uuid === "string" &&
+      (typeof username === "string" ||
+        username === null ||
+        username === undefined)
+    ) {
+      return { uuid, username: typeof username === "string" ? username : null };
+    }
+  }
+  throw new SkinApiError("Malformed resolve response from the server", {
+    code: "unknown",
+    status,
+  });
 }
 
 // uuid/username carry no payload, so they ride in the query (GET); others POST a body.

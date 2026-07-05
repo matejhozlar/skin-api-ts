@@ -704,6 +704,46 @@ describe("SkinApi.resolve", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
+  it("maps a wrong-shape 2xx body to SkinApiError(unknown) with the 2xx status", async () => {
+    const { fetch } = makeFetchMock([
+      new Response(JSON.stringify({ nope: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    ]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+      retries: 0,
+    });
+    await expect(client.resolve({ uuid: "x" })).rejects.toMatchObject({
+      name: "SkinApiError",
+      code: "unknown",
+      status: 200,
+    });
+  });
+
+  it("maps a non-JSON 2xx body to SkinApiError(unknown), not a SyntaxError", async () => {
+    const { fetch } = makeFetchMock([
+      new Response("<html>intermediary error page</html>", {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      }),
+    ]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+      retries: 0,
+    });
+    await expect(client.resolve({ username: "notch" })).rejects.toMatchObject({
+      name: "SkinApiError",
+      code: "unknown",
+      status: 200,
+    });
+  });
+
   it("maps 404 to not_found for an unknown player", async () => {
     const body = { error: { code: "NOT_FOUND", message: "Unknown player" } };
     const { fetch } = makeFetchMock([
