@@ -3,6 +3,16 @@
 This changelog tracks the Createrington Skin API TypeScript SDK. A release
 publishes to npm when a version bump is merged to `main`.
 
+## v2.7.0
+
+### Added
+
+- Six new poses in the known pose list, refreshed from the published OpenAPI
+  contract: `britzel`, `callout`, `crossed`, `crouching`, `lounge`, and
+  `mojavatar` (29 poses total). The server already accepted them, since
+  `render` takes any pose string; this release adds the build-time names to
+  `Poses` / `KNOWN_POSES` for autocompletion. Additive and non-breaking.
+
 ## v2.6.0
 
 ### Added
