@@ -2,8 +2,12 @@
 // Do not edit by hand. Regenerated from the published OpenAPI document.
 
 export const Poses = {
+  britzel: "britzel",
+  callout: "callout",
   cheer: "cheer",
   confidence: "confidence",
+  crossed: "crossed",
+  crouching: "crouching",
   curl: "curl",
   cute: "cute",
   dab: "dab",
@@ -15,6 +19,8 @@ export const Poses = {
   idle: "idle",
   idol: "idol",
   kneel: "kneel",
+  lounge: "lounge",
+  mojavatar: "mojavatar",
   ninja: "ninja",
   point: "point",
   ponder: "ponder",
@@ -28,8 +34,12 @@ export const Poses = {
 } as const;
 
 export const KNOWN_POSES = [
+  "britzel",
+  "callout",
   "cheer",
   "confidence",
+  "crossed",
+  "crouching",
   "curl",
   "cute",
   "dab",
@@ -41,6 +51,8 @@ export const KNOWN_POSES = [
   "idle",
   "idol",
   "kneel",
+  "lounge",
+  "mojavatar",
   "ninja",
   "point",
   "ponder",
