@@ -2,6 +2,7 @@
 // Do not edit by hand. Regenerated from the published OpenAPI document.
 
 export const Poses = {
+  airborne: "airborne",
   britzel: "britzel",
   callout: "callout",
   cheer: "cheer",
@@ -14,6 +15,7 @@ export const Poses = {
   dead: "dead",
   defeat: "defeat",
   delivery: "delivery",
+  diver: "diver",
   engineer: "engineer",
   friendship: "friendship",
   gaze: "gaze",
@@ -32,12 +34,14 @@ export const Poses = {
   snagged: "snagged",
   sprint: "sprint",
   tiptoe: "tiptoe",
+  toasty: "toasty",
   victory: "victory",
   wave: "wave",
   zombie: "zombie",
 } as const;
 
 export const KNOWN_POSES = [
+  "airborne",
   "britzel",
   "callout",
   "cheer",
@@ -50,6 +54,7 @@ export const KNOWN_POSES = [
   "dead",
   "defeat",
   "delivery",
+  "diver",
   "engineer",
   "friendship",
   "gaze",
@@ -68,6 +73,7 @@ export const KNOWN_POSES = [
   "snagged",
   "sprint",
   "tiptoe",
+  "toasty",
   "victory",
   "wave",
   "zombie",
