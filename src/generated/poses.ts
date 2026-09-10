@@ -3,6 +3,7 @@
 
 export const Poses = {
   airborne: "airborne",
+  boxed: "boxed",
   britzel: "britzel",
   callout: "callout",
   cheer: "cheer",
@@ -17,6 +18,7 @@ export const Poses = {
   delivery: "delivery",
   diver: "diver",
   engineer: "engineer",
+  extended: "extended",
   friendship: "friendship",
   gaze: "gaze",
   handstand: "handstand",
@@ -31,6 +33,7 @@ export const Poses = {
   pressed: "pressed",
   relaxed: "relaxed",
   scared: "scared",
+  shipped: "shipped",
   snagged: "snagged",
   sprint: "sprint",
   tiptoe: "tiptoe",
@@ -42,6 +45,7 @@ export const Poses = {
 
 export const KNOWN_POSES = [
   "airborne",
+  "boxed",
   "britzel",
   "callout",
   "cheer",
@@ -56,6 +60,7 @@ export const KNOWN_POSES = [
   "delivery",
   "diver",
   "engineer",
+  "extended",
   "friendship",
   "gaze",
   "handstand",
@@ -70,6 +75,7 @@ export const KNOWN_POSES = [
   "pressed",
   "relaxed",
   "scared",
+  "shipped",
   "snagged",
   "sprint",
   "tiptoe",
