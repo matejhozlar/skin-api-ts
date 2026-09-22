@@ -117,6 +117,44 @@ describe("SkinApi", () => {
     expect(captured[0].body).toBeUndefined();
   });
 
+  it("sends style when it is not the default", async () => {
+    const { fetch, captured } = makeFetchMock([pngResponse()]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+    });
+    await client.render({
+      pose: "wave",
+      source: { uuid: "uuid-1" },
+      options: { style: "cel" },
+    });
+    expect(captured[0].url).toBe(
+      "http://skin.test/v1/render?pose=wave&style=cel&uuid=uuid-1",
+    );
+  });
+
+  it("omits style when default or unset", async () => {
+    const { fetch, captured } = makeFetchMock([pngResponse(), pngResponse()]);
+    const client = new SkinApi({
+      apiKey: API_KEY,
+      baseUrl: "http://skin.test",
+      fetch,
+    });
+    await client.render({
+      pose: "wave",
+      source: { uuid: "uuid-1" },
+      options: { style: "default" },
+    });
+    await client.render({ pose: "wave", source: { uuid: "uuid-1" } });
+    expect(captured[0].url).toBe(
+      "http://skin.test/v1/render?pose=wave&uuid=uuid-1",
+    );
+    expect(captured[1].url).toBe(
+      "http://skin.test/v1/render?pose=wave&uuid=uuid-1",
+    );
+  });
+
   it("sends outline=true when outline is true", async () => {
     const { fetch, captured } = makeFetchMock([pngResponse()]);
     const client = new SkinApi({

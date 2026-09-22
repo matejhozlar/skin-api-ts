@@ -69,6 +69,7 @@ type SkinSource =
 interface RenderOptions {
   slim?: boolean; // override slim/Alex arm geometry; default uses skin metadata
   outline?: boolean; // draw a contrasting outline around the figure; default off
+  style?: "default" | "cel"; // "cel" = cel shading with ink lines over the skin's pixels; default "default"
   width?: number; // default 400 (64..2048)
   height?: number; // default 600 (64..2048)
 }

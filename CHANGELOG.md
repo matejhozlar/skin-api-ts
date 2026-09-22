@@ -3,6 +3,17 @@
 This changelog tracks the Createrington Skin API TypeScript SDK. A release
 publishes to npm when a version bump is merged to `main`.
 
+## v2.14.0
+
+### Added
+
+- `style` render option (`"default"` or `"cel"`), matching the `style` query
+  parameter published in API 1.8.0. `"cel"` draws two-tone shading, cast
+  shadows, ink lines and a rim light over the skin's own pixels and combines
+  with `outline`. The default is omitted from the request, so existing calls
+  send byte-identical URLs and keep their cache keys. The `RenderStyle` type is
+  exported.
+
 ## v2.12.0
 
 ### Added

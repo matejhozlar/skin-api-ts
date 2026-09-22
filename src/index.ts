@@ -9,6 +9,7 @@ export {
   type PoseName,
   type RenderOptions,
   type RenderParams,
+  type RenderStyle,
   type ResolveParams,
   type ResolvedPlayer,
   type SkinApiOptions,
