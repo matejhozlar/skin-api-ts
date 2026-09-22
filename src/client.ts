@@ -15,6 +15,13 @@ const BACKOFF_MAX_MS = 5_000;
  */
 export type PoseName = KnownPose | (string & {});
 
+/**
+ * A render style. `"default"` is the stock textured render; `"cel"` adds
+ * two-tone shading, cast shadows, ink lines and a rim light over the skin's
+ * own pixels.
+ */
+export type RenderStyle = "default" | "cel";
+
 /** The skin to render. Provide exactly one variant. */
 export type SkinSource =
   | {
@@ -50,6 +57,11 @@ export interface RenderOptions {
    * omitted from the request entirely unless `true`.
    */
   outline?: boolean;
+  /**
+   * Render style. Combines with `outline`. Omitted from the request when
+   * `"default"` or unset.
+   */
+  style?: RenderStyle;
   /** Output width in pixels. Default `400`; clamped to 64..2048. */
   width?: number;
   /** Output height in pixels. Default `600`; clamped to 64..2048. */
@@ -62,7 +74,7 @@ export interface RenderParams {
   pose: PoseName;
   /** The skin to render; exactly one source. */
   source: SkinSource;
-  /** Optional render tuning (slim, outline, width, height). */
+  /** Optional render tuning (slim, outline, style, width, height). */
   options?: RenderOptions;
   /** An `AbortSignal` to cancel the request. */
   signal?: AbortSignal;
@@ -400,6 +412,8 @@ function buildQuery(
   if (options?.slim !== undefined)
     params.set("slim", options.slim ? "true" : "false");
   if (options?.outline) params.set("outline", "true");
+  if (options?.style && options.style !== "default")
+    params.set("style", options.style);
   if (options?.width !== undefined) params.set("width", String(options.width));
   if (options?.height !== undefined)
     params.set("height", String(options.height));
