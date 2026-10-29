@@ -7,11 +7,12 @@ publishes to npm when a version bump is merged to `main`.
 
 ### Changed
 
-- `apiKey` is optional. When it is omitted (or empty) the client sends no
-  `Authorization` header instead of throwing in the constructor. The public API
-  still rejects keyless calls with `401`, so nothing changes for existing
-  users; this is for deployments that authenticate by reachability, such as a
-  loopback-only instance reached through `baseUrl`. Additive and non-breaking.
+- `apiKey` is optional when `baseUrl` points at a custom deployment. The client
+  then sends no `Authorization` header. This is for deployments that
+  authenticate by reachability, such as a loopback-only instance. Against the
+  default public `baseUrl` the constructor still throws when the key is
+  missing, empty or whitespace, so a misconfigured public client fails at
+  startup exactly as before. Additive and non-breaking.
 
 ## v2.15.0
 

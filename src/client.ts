@@ -130,9 +130,10 @@ export interface ResolvedPlayer {
 /** Options for the {@link SkinApi} constructor. */
 export interface SkinApiOptions {
   /**
-   * Your API key, sent as `Authorization: Bearer <apiKey>`. Required for the
-   * public API; omit it only against a deployment that does not authenticate
-   * (then no `Authorization` header is sent at all).
+   * Your API key, sent as `Authorization: Bearer <apiKey>`. Required against
+   * the public API (the constructor throws without it when `baseUrl` is the
+   * default). Omit it only with a custom `baseUrl` that does not authenticate;
+   * then no `Authorization` header is sent at all.
    */
   apiKey?: string;
   /** API base URL. Default `"https://api.createrington.com"`. */
@@ -170,10 +171,13 @@ export class SkinApi {
   private readonly userAgent: string;
   private readonly fetchImpl: typeof fetch;
 
-  /** @param opts - Client options. All optional; the public API needs {@link SkinApiOptions.apiKey}. */
+  /** @param opts - Client options. The public API needs {@link SkinApiOptions.apiKey}; everything else is optional. */
   constructor(opts: SkinApiOptions = {}) {
-    this.apiKey = opts.apiKey || undefined;
+    this.apiKey = opts.apiKey?.trim() || undefined;
     this.baseUrl = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
+    if (this.apiKey === undefined && this.baseUrl === DEFAULT_BASE_URL) {
+      throw new Error("SkinApi: apiKey is required for the public API");
+    }
     this.timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     this.retries = opts.retries ?? DEFAULT_RETRIES;
     this.userAgent = opts.userAgent ?? DEFAULT_USER_AGENT;
