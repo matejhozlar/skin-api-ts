@@ -3,6 +3,16 @@
 This changelog tracks the Createrington Skin API TypeScript SDK. A release
 publishes to npm when a version bump is merged to `main`.
 
+## v2.16.0
+
+### Changed
+
+- `apiKey` is optional. When it is omitted (or empty) the client sends no
+  `Authorization` header instead of throwing in the constructor. The public API
+  still rejects keyless calls with `401`, so nothing changes for existing
+  users; this is for deployments that authenticate by reachability, such as a
+  loopback-only instance reached through `baseUrl`. Additive and non-breaking.
+
 ## v2.15.0
 
 ### Added

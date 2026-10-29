@@ -129,8 +129,12 @@ export interface ResolvedPlayer {
 
 /** Options for the {@link SkinApi} constructor. */
 export interface SkinApiOptions {
-  /** Your API key. Required. Sent as `Authorization: Bearer <apiKey>`. */
-  apiKey: string;
+  /**
+   * Your API key, sent as `Authorization: Bearer <apiKey>`. Required for the
+   * public API; omit it only against a deployment that does not authenticate
+   * (then no `Authorization` header is sent at all).
+   */
+  apiKey?: string;
   /** API base URL. Default `"https://api.createrington.com"`. */
   baseUrl?: string;
   /** Per-request timeout in milliseconds. Default `30_000`. */
@@ -160,16 +164,15 @@ export interface SkinApiOptions {
  */
 export class SkinApi {
   private readonly baseUrl: string;
-  private readonly apiKey: string;
+  private readonly apiKey: string | undefined;
   private readonly timeoutMs: number;
   private readonly retries: number;
   private readonly userAgent: string;
   private readonly fetchImpl: typeof fetch;
 
-  /** @param opts - Client options. Only {@link SkinApiOptions.apiKey} is required. */
-  constructor(opts: SkinApiOptions) {
-    if (!opts.apiKey) throw new Error("SkinApi: apiKey is required");
-    this.apiKey = opts.apiKey;
+  /** @param opts - Client options. All optional; the public API needs {@link SkinApiOptions.apiKey}. */
+  constructor(opts: SkinApiOptions = {}) {
+    this.apiKey = opts.apiKey || undefined;
     this.baseUrl = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
     this.timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     this.retries = opts.retries ?? DEFAULT_RETRIES;
@@ -307,9 +310,10 @@ export class SkinApi {
   }
 
   private authHeaders(): Record<string, string> {
-    const headers: Record<string, string> = {
-      authorization: `Bearer ${this.apiKey}`,
-    };
+    const headers: Record<string, string> = {};
+    if (this.apiKey !== undefined) {
+      headers["authorization"] = `Bearer ${this.apiKey}`;
+    }
     // User-Agent is a Forbidden header name for fetch in browsers and Web
     // Workers; setting it makes the underlying fetch throw a TypeError
     // before any request is sent. Server-side runtimes (Node, Bun, Deno
