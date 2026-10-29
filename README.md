@@ -39,7 +39,7 @@ document.querySelector("img")!.src = url;
 
 ```ts
 new SkinApi({
-  apiKey:    string,                    // required
+  apiKey?:   string,                    // required with the default baseUrl; omitted on a custom baseUrl = no Authorization header
   baseUrl?:  string,                    // default "https://api.createrington.com"
   timeoutMs?: number,                   // default 30_000
   retries?:  number,                    // default 2 (retries 429/502/503/504 and network errors)

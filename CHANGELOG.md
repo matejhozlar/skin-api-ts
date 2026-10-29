@@ -3,6 +3,17 @@
 This changelog tracks the Createrington Skin API TypeScript SDK. A release
 publishes to npm when a version bump is merged to `main`.
 
+## v2.16.0
+
+### Changed
+
+- `apiKey` is optional when `baseUrl` points at a custom deployment. The client
+  then sends no `Authorization` header. This is for deployments that
+  authenticate by reachability, such as a loopback-only instance. Against the
+  default public `baseUrl` the constructor still throws when the key is
+  missing, empty or whitespace, so a misconfigured public client fails at
+  startup exactly as before. Additive and non-breaking.
+
 ## v2.15.0
 
 ### Added
