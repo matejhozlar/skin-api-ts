@@ -61,10 +61,41 @@ function pngResponse(): Response {
 }
 
 describe("SkinApi", () => {
-  it("requires apiKey", () => {
+  it("requires apiKey against the public API", () => {
     expect(() => new SkinApi({ apiKey: "" })).toThrowError(
       /apiKey is required/,
     );
+    expect(() => new SkinApi({ apiKey: "  " })).toThrowError(
+      /apiKey is required/,
+    );
+    expect(() => new SkinApi()).toThrowError(/apiKey is required/);
+    expect(
+      () => new SkinApi({ baseUrl: "https://api.createrington.com/" }),
+    ).toThrowError(/apiKey is required/);
+  });
+
+  it("sends no Authorization header when apiKey is omitted", async () => {
+    const { fetch, captured } = makeFetchMock([pngResponse()]);
+    const client = new SkinApi({
+      baseUrl: "http://127.0.0.1:8788/internal",
+      fetch,
+    });
+    await client.render({ pose: "wave", source: { uuid: "uuid-1" } });
+    expect(captured[0].url).toBe(
+      "http://127.0.0.1:8788/internal/v1/render?pose=wave&uuid=uuid-1",
+    );
+    expect(captured[0].headers["authorization"]).toBeUndefined();
+  });
+
+  it("treats an empty apiKey as omitted", async () => {
+    const { fetch, captured } = makeFetchMock([pngResponse()]);
+    const client = new SkinApi({
+      apiKey: "",
+      baseUrl: "http://skin.test",
+      fetch,
+    });
+    await client.render({ pose: "wave", source: { uuid: "uuid-1" } });
+    expect(captured[0].headers["authorization"]).toBeUndefined();
   });
 
   it("defaults baseUrl to api.createrington.com", async () => {
